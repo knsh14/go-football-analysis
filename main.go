@@ -1,6 +1,9 @@
 package main
 
 import (
+	"code.google.com/p/plotinum/plot"
+	"code.google.com/p/plotinum/plotter"
+	"code.google.com/p/plotinum/plotutil"
 	"encoding/csv"
 	"fmt"
 	"io"
@@ -59,7 +62,10 @@ func (match *Match) IsDraw() bool {
 }
 
 func main() {
+	teams := [...]string{"Arsenal", "Aston Villa", "Burnley", "Chelsea", "Crystal Palace", "Everton", "HomeTeam", "Hull", "Leicester", "Liverpool", "Man City", "Man United", "Newcastle", "QPR", "Southampton", "Stoke", "Sunderland", "Swansea", "Tottenham", "West Brom", "West Ham"}
+}
 
+func analys(team string) {
 	var fp *os.File
 	var err error
 	fp, err = os.Open("result.csv")
@@ -72,6 +78,8 @@ func main() {
 	reader.Comma = ','
 	reader.LazyQuotes = true
 	var scored, allowed, match, win = 0, 0, 0, 0.0
+	reals := make([]float64, 38)
+	pythagorean := make([]float64, 38)
 	for {
 		record, err := reader.Read()
 		if err == io.EOF {
@@ -81,7 +89,6 @@ func main() {
 		}
 		m := NewMatch(record[0], record[1], record[2], record[3])
 
-		team := "Man United"
 		if m.Is(team) {
 			s, a := m.GetScore(team)
 			scored += s
@@ -93,9 +100,24 @@ func main() {
 			if m.IsDraw() {
 				win += 0.3333
 			}
+			reals[match-1] = float64(win) / float64(match) * 100
+			pythagorean[match-1] = PythagoreanExpectation(scored, allowed, match)
 			fmt.Printf("%f\t%f\n", PythagoreanExpectation(scored, allowed, match), float64(win)/float64(match)*100)
 		}
 	}
+	GenerateGraph()
+}
+
+func GeneratePlot(parcentage []float64) plotter.XYs {
+	pts := make(plotter.XYs, len(parcentage))
+	for i := range parcentage {
+		pts[i].X = i
+		pts[i].Y = parcentage[i]
+	}
+	return pts
+}
+
+func GenerateGraph() {
 }
 
 func PythagoreanExpectation(scored, allowed, match int) float64 {
