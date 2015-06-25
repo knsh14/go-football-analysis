@@ -63,9 +63,12 @@ func (match *Match) IsDraw() bool {
 
 func main() {
 	teams := [...]string{"Arsenal", "Aston Villa", "Burnley", "Chelsea", "Crystal Palace", "Everton", "HomeTeam", "Hull", "Leicester", "Liverpool", "Man City", "Man United", "Newcastle", "QPR", "Southampton", "Stoke", "Sunderland", "Swansea", "Tottenham", "West Brom", "West Ham"}
+	for _, t := range teams {
+		analysis(t)
+	}
 }
 
-func analys(team string) {
+func analysis(team string) {
 	var fp *os.File
 	var err error
 	fp, err = os.Open("result.csv")
@@ -102,22 +105,34 @@ func analys(team string) {
 			}
 			reals[match-1] = float64(win) / float64(match) * 100
 			pythagorean[match-1] = PythagoreanExpectation(scored, allowed, match)
-			fmt.Printf("%f\t%f\n", PythagoreanExpectation(scored, allowed, match), float64(win)/float64(match)*100)
+			// fmt.Printf("%f\t%f\n", PythagoreanExpectation(scored, allowed, match), float64(win)/float64(match)*100)
 		}
 	}
-	GenerateGraph()
+	GenerateGraph(team, pythagorean, reals)
 }
 
 func GeneratePlot(parcentage []float64) plotter.XYs {
 	pts := make(plotter.XYs, len(parcentage))
 	for i := range parcentage {
-		pts[i].X = i
+		pts[i].X = float64(i)
 		pts[i].Y = parcentage[i]
 	}
 	return pts
 }
 
-func GenerateGraph() {
+func GenerateGraph(teamName string, pythagorean, reals []float64) {
+	p, _ := plot.New()
+	p.Title.Text = teamName
+	p.X.Label.Text = "Day"
+	p.Y.Label.Text = "Parcentage"
+	p.X.Min = 0.0
+	p.X.Max = 38.0
+	p.Y.Min = 0.0
+	p.Y.Max = 100.0
+	plotutil.AddLinePoints(p, "", GeneratePlot(pythagorean), GeneratePlot(reals))
+	width := 4.0
+	height := 4.0
+	p.Save(width, height, fmt.Sprintf("%s.png", teamName))
 }
 
 func PythagoreanExpectation(scored, allowed, match int) float64 {
