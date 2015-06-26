@@ -8,7 +8,7 @@ import (
 	"fmt"
 	"io"
 	"math"
-	"os"
+	"net/http"
 	"strconv"
 )
 
@@ -62,22 +62,22 @@ func (match *Match) IsDraw() bool {
 }
 
 func main() {
-	teams := [...]string{"Arsenal", "Aston Villa", "Burnley", "Chelsea", "Crystal Palace", "Everton", "HomeTeam", "Hull", "Leicester", "Liverpool", "Man City", "Man United", "Newcastle", "QPR", "Southampton", "Stoke", "Sunderland", "Swansea", "Tottenham", "West Brom", "West Ham"}
+	teams := [...]string{"Arsenal", "Aston Villa", "Burnley", "Chelsea", "Crystal Palace", "Everton", "Hull", "Leicester", "Liverpool", "Man City", "Man United", "Newcastle", "QPR", "Southampton", "Stoke", "Sunderland", "Swansea", "Tottenham", "West Brom", "West Ham"}
 	for _, t := range teams {
 		analysis(t)
 	}
 }
 
 func analysis(team string) {
-	var fp *os.File
-	var err error
-	fp, err = os.Open("result.csv")
+	resp, err := http.Get("http://www.football-data.co.uk/mmz4281/1415/E0.csv")
 	if err != nil {
-		panic(err)
+		// handle error
+		fmt.Println(err)
+		return
 	}
-	defer fp.Close()
+	defer resp.Body.Close()
 
-	reader := csv.NewReader(fp)
+	reader := csv.NewReader(resp.Body)
 	reader.Comma = ','
 	reader.LazyQuotes = true
 	var scored, allowed, match, win = 0, 0, 0, 0.0
@@ -90,7 +90,7 @@ func analysis(team string) {
 		} else if err != nil {
 			panic(err)
 		}
-		m := NewMatch(record[0], record[1], record[2], record[3])
+		m := NewMatch(record[2], record[3], record[4], record[5])
 
 		if m.Is(team) {
 			s, a := m.GetScore(team)
@@ -105,7 +105,6 @@ func analysis(team string) {
 			}
 			reals[match-1] = float64(win) / float64(match) * 100
 			pythagorean[match-1] = PythagoreanExpectation(scored, allowed, match)
-			// fmt.Printf("%f\t%f\n", PythagoreanExpectation(scored, allowed, match), float64(win)/float64(match)*100)
 		}
 	}
 	GenerateGraph(team, pythagorean, reals)
